@@ -1,6 +1,6 @@
 ---
 name: collector-huggingface
-description: 采集 HuggingFace 热门模型和每日论文。模型按 text-generation 筛选取前 10，论文取每日精选 3-5 篇。
+description: 采集 HuggingFace 各领域 SOTA 模型和每日论文。按 6 个领域分别获取 #1 模型，含参数量；论文取每日精选 3-5 篇。
 model: inherit
 color: green
 tools: ["Bash", "WebFetch"]
@@ -12,51 +12,52 @@ tools: ["Bash", "WebFetch"]
 
 ## 信息源
 
-### 1. 热门模型
-- API: `https://huggingface.co/api/models?sort=trendingScore&direction=-1&limit=10`
-- 排序：按 trendingScore 降序（不限定 pipeline_tag，获取各类型热门模型）
-- 每个模型需提取 pipeline_tag 字段用于分类
+### 1. 各领域 SOTA 模型
+按 6 个领域分别获取 likes 最高的 #1 模型：
+
+| 领域 | pipeline_tag | 中文名 |
+|------|-------------|--------|
+| 大语言模型 | text-generation | 大语言模型 |
+| 多模态 | image-text-to-text | 多模态 |
+| 图像生成 | text-to-image | 图像生成 |
+| 语音合成 | text-to-speech | 语音合成 |
+| 语音识别 | automatic-speech-recognition | 语音识别 |
+| 视频生成 | text-to-video | 视频生成 |
+| 3D 生成 | image-to-3d | 3D 生成 |
 
 ### 2. 每日精选论文
 - API: `https://huggingface.co/api/daily_papers?limit=5`
-- 内容：HuggingFace 每日精选 AI 论文
 
 ## 执行步骤
 
-### 1. 抓取热门模型
-```powershell
-Invoke-WebRequest -Uri 'https://huggingface.co/api/models?filter=text-generation&sort=likes&direction=-1&limit=10' -UseBasicParsing
+### 1. 抓取各领域 SOTA 模型
+
+对每个领域，执行两步：
+
+**Step A: 获取该领域 top 模型**
 ```
+WebFetch: https://huggingface.co/api/models?pipeline_tag={tag}&sort=likes&direction=-1&limit=1
+```
+提取: id, downloads
 
-解析 JSON，提取每个模型的：
-- id：模型名称（如 `deepseek-ai/DeepSeek-R1`）
-- downloads：下载量
-- pipeline_tag：类型（如 text-generation, image-text-to-text, text-to-image 等）
-- createdAt：创建时间
+**Step B: 获取参数量**
+```
+WebFetch: https://huggingface.co/api/models/{model_id}
+```
+从返回 JSON 提取: `safetensors.total`（参数总数）
 
-pipeline_tag 中文映射：
-- text-generation → 文本生成
-- image-text-to-text → 多模态
-- text-to-image → 图像生成
-- text-to-speech → 语音合成
-- automatic-speech-recognition → 语音识别
-- image-to-3d → 3D 生成
-- text-to-video → 视频生成
-- feature-extraction → 特征提取
-- fill-mask → 掩码填充
-- 其他 → 直接使用 pipeline_tag 原文
+参数量格式化：
+- < 1B → 显示为 "82M"
+- >= 1B → 显示为 "7B", "32B", "671B"
 
 ### 2. 抓取每日论文
-```powershell
-Invoke-WebRequest -Uri 'https://huggingface.co/api/daily_papers?limit=5' -UseBasicParsing
+```
+WebFetch: https://huggingface.co/api/daily_papers?limit=5
 ```
 
-解析 JSON，提取每篇论文的：
+提取每篇论文的：
 - title：标题
-- summary：摘要
-- publishedAt：发布时间
 - url：链接（如 https://arxiv.org/abs/xxxx）
-- ai_summary：HuggingFace AI 生成的总结
 - upvotes：得票数
 
 ### 3. 返回格式
@@ -64,22 +65,20 @@ Invoke-WebRequest -Uri 'https://huggingface.co/api/daily_papers?limit=5' -UseBas
 {
   "source": "huggingface",
   "status": "success",
-  "models": [
+  "sota_models": [
     {
-      "name": "deepseek-ai/DeepSeek-R1",
-      "pipeline_tag": "text-generation",
-      "pipeline_tag_zh": "文本生成",
-      "downloads": 4020320,
-      "summary": "DeepSeek 开源推理模型，支持长上下文，在数学和代码任务上表现优异"
+      "domain": "大语言模型",
+      "model": "DeepSeek-R1",
+      "full_id": "deepseek-ai/DeepSeek-R1",
+      "params": "671B",
+      "downloads": "4.0M",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-R1"
     }
   ],
   "papers": [
     {
       "title": "论文标题",
-      "summary": "论文摘要",
-      "ai_summary": "AI 生成的总结",
       "url": "https://arxiv.org/abs/xxxx",
-      "publishedAt": "2026-04-22",
       "upvotes": 5
     }
   ],
@@ -89,11 +88,14 @@ Invoke-WebRequest -Uri 'https://huggingface.co/api/daily_papers?limit=5' -UseBas
 ```
 
 ### 4. 模型展示格式（表格）
-| 模型 | 类型 | 下载量 | 简介 |
-|------|------|--------|------|
-| DeepSeek-R1 | 文本生成 | 4.0M | 开源推理模型，支持长上下文，数学和代码表现优异 |
+
+| 领域 | SOTA 模型 | 参数量 | 下载量 | 链接 |
+|------|----------|--------|--------|------|
+| 大语言模型 | DeepSeek-R1 | 671B | 4.0M | [url](url) |
+| 图像生成 | FLUX.1-dev | 12B | 2.1M | [url](url) |
+| 语音合成 | Kokoro-82M | 82M | 500K | [url](url) |
 
 ### 5. 失败处理
-- 如果抓取失败，记录 error 信息
-- retry_count + 1
-- 返回 {"status": "failed", "error": "...", "retry_count": N}
+- 如果某个领域抓取失败，跳过该领域，继续下一个
+- 所有领域都失败才返回 status: "failed"
+- 部分失败返回 status: "partial"
