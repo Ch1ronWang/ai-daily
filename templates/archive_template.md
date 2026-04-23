@@ -32,7 +32,17 @@
 
 ## 🤖 HuggingFace
 
-### 各领域 SOTA 模型
+### LLM 分层 SOTA
+
+| 参数级别 | SOTA 模型 | 参数量 | 下载量 |
+|---------|----------|--------|--------|
+| ≤3B | [{model}]({url}) | {params} | {downloads} |
+| 7-9B | [{model}]({url}) | {params} | {downloads} |
+| 14-27B | [{model}]({url}) | {params} | {downloads} |
+| 30-35B | [{model}]({url}) | {params} | {downloads} |
+| 70B+ | [{model}]({url}) | {params} | {downloads} |
+
+### 其他领域 SOTA
 
 | 领域 | SOTA 模型 | 参数量 | 下载量 |
 |------|----------|--------|--------|
@@ -104,7 +114,7 @@
 |----|------|------|
 | AI Builders | ✅ | {N} 人 {M} 条 |
 | Hacker News | ✅ | {N} 条 |
-| HuggingFace | ✅ | {N} 领域 SOTA + {M} 论文 |
+| HuggingFace | ✅ | {N} LLM 分层 + {M} 领域 SOTA + {K} 论文 |
 | GitHub | ✅ | {N} 个 |
 | Reddit | ✅ | {N} 条 |
 | Anthropic/Claude | ✅ | {N} 篇 |
